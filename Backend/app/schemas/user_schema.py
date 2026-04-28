@@ -2,7 +2,6 @@ from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
 from bson import ObjectId
-
 from pydantic_core import core_schema
 from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler
 from pydantic.json_schema import JsonSchemaValue
@@ -56,3 +55,19 @@ class UserResponse(UserBase):
         "from_attributes": True,
         "json_encoders": {ObjectId: str}
     }
+
+class UpdateProfile(BaseModel):
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None
+    full_name: Optional[str] = None
+
+class ForgotPassword(BaseModel):
+    email: EmailStr
+
+class ResetPassword(BaseModel):
+    token: str
+    new_password: str
+
+class UpdatePassword(BaseModel):
+    old_password: str
+    new_password: str

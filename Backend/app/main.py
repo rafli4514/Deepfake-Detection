@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api import auth, history
+from app.api import auth, history, detection
 from app.core.database import connect_to_mongo, close_mongo_connection
 from app.core.config import settings
 
@@ -24,3 +24,4 @@ def read_root():
 # Include Routers
 app.include_router(auth.router, prefix="/auth", tags=["authentication"])
 app.include_router(history.router, prefix="/history", tags=["detection history"])
+app.include_router(detection.router, prefix="/detection", tags=["deepfake detection"])

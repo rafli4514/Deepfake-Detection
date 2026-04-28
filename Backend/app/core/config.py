@@ -15,4 +15,8 @@ class Settings:
     SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
 
+    # Deepfake Detection
+    # DETECTION_MODEL_PATH: str = os.getenv("DETECTION_MODEL_PATH", "models/deepfake_detector.pt")
+    UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "storage/uploads")
+
 settings = Settings()
