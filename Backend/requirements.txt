@@ -1,0 +1,17 @@
+fastapi
+uvicorn
+python-multipart
+pydantic
+python-dotenv
+tensorflow
+opencv-python
+numpy
+pandas
+matplotlib
+motor
+pydantic-settings
+pymongo
+bcrypt==4.0.1
+passlib[bcrypt]
+python-jose[cryptography]
+fastapi-mail
