@@ -5,6 +5,7 @@ pydantic
 python-dotenv
 tensorflow
 opencv-python
+opencv-contrib-python
 numpy
 pandas
 matplotlib
@@ -15,3 +16,4 @@ bcrypt==4.0.1
 passlib[bcrypt]
 python-jose[cryptography]
 fastapi-mail
+mtcnn

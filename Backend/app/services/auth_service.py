@@ -49,7 +49,7 @@ class AuthService:
         reset_link = f"http://localhost:8000/auth/reset-password?token={reset_token}"
         
         # Simulasi kirim email
-        print(f"\n[SIMULASI EMAIL] Link: {reset_link}\n")
+        print(f"\n[EMAIL] Link: {reset_link}\n")
         
         return {
             "message": "Link reset telah dikirim.",

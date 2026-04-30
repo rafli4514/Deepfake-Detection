@@ -6,12 +6,22 @@ env/
 venv/
 .env
 
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
+
 # DB
 *.db
 
 # ML Models
 models/*.h5
 models/*.pb
+models/*.pt
+models/*.pth
+models/*.weights
+models/Dataset/*
+data/
+dataset/
+raw_data/
 
 # IDE
 .vscode/
