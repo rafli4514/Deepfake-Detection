@@ -12,8 +12,8 @@ router = APIRouter()
 # async def create_history(history_in: HistoryCreate):
 #     db = get_database()
 #     history_dict = history_in.dict()
-#     history_dict["created_at"] = datetime.utcnow()
-    
+#     history_dict["created_at"] = datetime.now()
+#     
 #     new_history = await db.history.insert_one(history_dict)
 #     created_history = await db.history.find_one({"_id": new_history.inserted_id})
 #     return created_history

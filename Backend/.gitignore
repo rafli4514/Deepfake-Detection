@@ -26,3 +26,6 @@ raw_data/
 # IDE
 .vscode/
 .idea/
+
+# Storage
+uploads/

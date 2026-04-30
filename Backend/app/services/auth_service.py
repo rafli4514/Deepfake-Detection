@@ -18,7 +18,7 @@ class AuthService:
         user_dict = user_in.dict()
         password = user_dict.pop("password")
         user_dict["password_hash"] = get_password_hash(password)
-        user_dict["created_at"] = datetime.utcnow()
+        user_dict["created_at"] = datetime.now()
         
         new_user = await db.users.insert_one(user_dict)
         return await db.users.find_one({"_id": new_user.inserted_id})

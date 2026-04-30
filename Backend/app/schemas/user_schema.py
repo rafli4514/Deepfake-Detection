@@ -39,7 +39,6 @@ class PyObjectId(ObjectId):
         return handler(core_schema.str_schema())
 
 class UserBase(BaseModel):
-    username: str
     email: EmailStr
     full_name: Optional[str] = None
 
@@ -57,7 +56,6 @@ class UserResponse(UserBase):
     }
 
 class UpdateProfile(BaseModel):
-    username: Optional[str] = None
     email: Optional[EmailStr] = None
     full_name: Optional[str] = None
 

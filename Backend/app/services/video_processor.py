@@ -1,5 +1,6 @@
 import cv2
 import os
+import numpy as np
 from typing import Tuple, List, Optional
 from mtcnn import MTCNN
 
@@ -31,9 +32,10 @@ class VideoProcessor:
         cap.release()
         return resolution, round(duration, 2)
 
-    def extract_and_crop_faces(self, file_path: str, output_dir: str, frame_interval: int = 30) -> List[str]:
+    def extract_and_crop_faces(self, file_path: str, output_dir: str, num_frames: int = 15) -> List[str]:
         """
-        Extract frames at intervals and crop detected faces using MTCNN.
+        Extract a fixed number of frames evenly spaced across the video 
+        and crop detected faces using MTCNN.
         Returns a list of paths to the saved face images.
         """
         if not os.path.exists(output_dir):
@@ -43,47 +45,51 @@ class VideoProcessor:
         if not cap.isOpened():
             return []
         
-        frame_idx = 0
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        if total_frames <= 0:
+            cap.release()
+            return []
+            
+        # Calculate indices for uniform sampling
+        # Example: if total_frames=100 and num_frames=10, we get [0, 11, 22, ..., 99]
+        frame_indices = [int(i) for i in np.linspace(0, total_frames - 1, num_frames)]
+        
         saved_faces = []
         
-        while True:
+        for idx in frame_indices:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
             ret, frame = cap.read()
             if not ret:
-                break
+                continue
             
-            # Process frames at the specified interval
-            if frame_idx % frame_interval == 0:
-                # Convert BGR to RGB for MTCNN
-                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            # Convert BGR to RGB for MTCNN
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            
+            # Detect faces
+            results = self.detector.detect_faces(rgb_frame)
+            
+            # Take only the first (most prominent) face for each sampled frame
+            if results:
+                x, y, w, h = results[0]['box']
+                # Ensure coordinates are positive
+                x, y = max(0, x), max(0, y)
                 
-                # Detect faces
-                results = self.detector.detect_faces(rgb_frame)
+                # Add margin padding (20%)
+                pad_w = int(w * 0.2)
+                pad_h = int(h * 0.2)
                 
-                for i, result in enumerate(results):
-                    x, y, w, h = result['box']
-                    # Ensure coordinates are positive
-                    x, y = max(0, x), max(0, y)
-                    
-                    # Add some padding to the crop (20%)
-                    pad_w = int(w * 0.2)
-                    pad_h = int(h * 0.2)
-                    
-                    y1 = max(0, y - pad_h)
-                    y2 = min(frame.shape[0], y + h + pad_h)
-                    x1 = max(0, x - pad_w)
-                    x2 = min(frame.shape[1], x + w + pad_w)
-                    
-                    face_img = frame[y1:y2, x1:x2]
-                    
-                    if face_img.size == 0:
-                        continue
-                        
-                    face_filename = f"frame_{frame_idx}_face_{i}.jpg"
+                y1 = max(0, y - pad_h)
+                y2 = min(frame.shape[0], y + h + pad_h)
+                x1 = max(0, x - pad_w)
+                x2 = min(frame.shape[1], x + w + pad_w)
+                
+                face_img = frame[y1:y2, x1:x2]
+                
+                if face_img.size != 0:
+                    face_filename = f"frame_{idx}_face.jpg"
                     face_path = os.path.join(output_dir, face_filename)
                     cv2.imwrite(face_path, face_img)
                     saved_faces.append(face_path)
-            
-            frame_idx += 1
             
         cap.release()
         return saved_faces

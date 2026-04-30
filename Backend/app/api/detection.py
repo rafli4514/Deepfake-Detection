@@ -15,7 +15,7 @@ router = APIRouter()
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20MB
 MAX_DURATION_SEC = 60  # 1 Minute
 
-@router.post("/", response_model=HistoryResponse)
+@router.post("/detect", response_model=HistoryResponse)
 async def upload_and_detect(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
@@ -33,9 +33,9 @@ async def upload_and_detect(
         )
     
     # 2. Validasi ukuran file
-    # Read content to check size (fast enough for 20MB)
-    content = await file.read()
-    file_size = len(content)
+    # Check size using FastAPI's built-in property (avoids buggy seek operations)
+    file_size = file.size or 0
+    
     if file_size > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
@@ -43,13 +43,22 @@ async def upload_and_detect(
         )
     
     # 3. Save the file temporarily for duration check and processing
-    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-    file_ext = os.path.splitext(file.filename)[1]
-    saved_filename = f"{uuid.uuid4()}{file_ext}"
-    file_path = os.path.join(settings.UPLOAD_DIR, saved_filename)
+    from pathlib import Path
+    upload_dir = Path(settings.UPLOAD_DIR).absolute()
+    upload_dir.mkdir(parents=True, exist_ok=True)
     
+    file_ext = Path(file.filename).suffix
+    saved_filename = f"{uuid.uuid4()}{file_ext}"
+    file_path_obj = upload_dir / saved_filename
+    file_path = str(file_path_obj)
+    
+    # Atomic write: safe read via FastAPI's async read
+    content = await file.read()
     with open(file_path, "wb") as f:
         f.write(content)
+        f.flush()
+        os.fsync(f.fileno()) # Force write to disk
+
     
     # 4. Validate video duration using OpenCV
     cap = cv2.VideoCapture(file_path)
@@ -90,9 +99,9 @@ async def upload_and_detect(
             "frames_analyzed": 0
         },
         "execution_stats": {
-            "start_time": datetime.utcnow()
+            "start_time": datetime.now()
         },
-        "created_at": datetime.utcnow()
+        "created_at": datetime.now()
     }
     
     result = await db.history.insert_one(history_data)

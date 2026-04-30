@@ -1,10 +1,56 @@
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Shield, ArrowRight, Lock, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import api from "@/lib/api";
 
 export default function LoginPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (location.state?.message) {
+      setMessage(location.state.message);
+    }
+  }, [location]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.id]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      // Login uses OAuth2 form data
+      const params = new URLSearchParams();
+      params.append("username", formData.email);
+      params.append("password", formData.password);
+
+      const response = await api.post("/auth/login", params, {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      });
+
+      localStorage.setItem("token", response.data.access_token);
+      navigate("/dashboard");
+    } catch (err: any) {
+      setError(err.response?.data?.detail || "Email atau password salah");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-[90vh] flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background blobs for visual consistency with home page */}
@@ -26,7 +72,17 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            {error && (
+              <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-center">
+                {error}
+              </div>
+            )}
+            {message && (
+              <div className="p-3 text-sm text-green-600 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-center">
+                {message}
+              </div>
+            )}
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium leading-none text-gray-700 dark:text-gray-300">
                 Email
@@ -38,6 +94,8 @@ export default function LoginPage() {
                   type="email"
                   placeholder="nama@email.com"
                   className="pl-10 h-11 border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-950/50"
+                  value={formData.email}
+                  onChange={handleChange}
                   required
                 />
               </div>
@@ -59,6 +117,8 @@ export default function LoginPage() {
                   type="password"
                   placeholder="••••••••"
                   className="pl-10 h-11 border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-950/50"
+                  value={formData.password}
+                  onChange={handleChange}
                   required
                 />
               </div>
@@ -66,10 +126,11 @@ export default function LoginPage() {
 
             <Button
               type="submit"
+              disabled={loading}
               className="w-full h-11 text-base font-semibold bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white shadow-lg shadow-blue-500/25 transition-all"
             >
-              Masuk
-              <ArrowRight className="ml-2 w-4 h-4" />
+              {loading ? "Masuk..." : "Masuk"}
+              {!loading && <ArrowRight className="ml-2 w-4 h-4" />}
             </Button>
           </form>
         </CardContent>

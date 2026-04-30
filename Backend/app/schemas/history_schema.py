@@ -44,7 +44,7 @@ class HistoryCreate(HistoryBase):
 
 class HistoryResponse(HistoryBase):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="Timestamp when the record was created")
+    created_at: datetime = Field(default_factory=datetime.now, description="Timestamp when the record was created")
 
     model_config = {
         "populate_by_name": True,

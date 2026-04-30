@@ -1,10 +1,40 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Shield, ArrowRight, Lock, Mail, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import api from "@/lib/api";
 
 export default function RegisterPage() {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    full_name: "",
+    email: "",
+    password: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.id]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      await api.post("/auth/register", formData);
+      navigate("/login", { state: { message: "Registrasi berhasil! Silakan masuk." } });
+    } catch (err: any) {
+      setError(err.response?.data?.detail || "Terjadi kesalahan saat registrasi");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-[90vh] flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background blobs for visual consistency with home page */}
@@ -26,18 +56,25 @@ export default function RegisterPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            {error && (
+              <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-center">
+                {error}
+              </div>
+            )}
             <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-medium leading-none text-gray-700 dark:text-gray-300">
+              <label htmlFor="full_name" className="text-sm font-medium leading-none text-gray-700 dark:text-gray-300">
                 Nama Lengkap
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
                 <Input
-                  id="name"
+                  id="full_name"
                   type="text"
                   placeholder="Nama Lengkap Anda"
                   className="pl-10 h-11 border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-950/50"
+                  value={formData.full_name}
+                  onChange={handleChange}
                   required
                 />
               </div>
@@ -54,6 +91,8 @@ export default function RegisterPage() {
                   type="email"
                   placeholder="nama@email.com"
                   className="pl-10 h-11 border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-950/50"
+                  value={formData.email}
+                  onChange={handleChange}
                   required
                 />
               </div>
@@ -70,6 +109,8 @@ export default function RegisterPage() {
                   type="password"
                   placeholder="••••••••"
                   className="pl-10 h-11 border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-950/50"
+                  value={formData.password}
+                  onChange={handleChange}
                   required
                 />
               </div>
@@ -77,10 +118,11 @@ export default function RegisterPage() {
 
             <Button
               type="submit"
+              disabled={loading}
               className="w-full h-11 text-base font-semibold bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white shadow-lg shadow-blue-500/25 transition-all mt-2"
             >
-              Daftar Sekarang
-              <ArrowRight className="ml-2 w-4 h-4" />
+              {loading ? "Mendaftarkan..." : "Daftar Sekarang"}
+              {!loading && <ArrowRight className="ml-2 w-4 h-4" />}
             </Button>
           </form>
         </CardContent>

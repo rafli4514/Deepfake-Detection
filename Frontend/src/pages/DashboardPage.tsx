@@ -1,11 +1,14 @@
-import { Upload, FileVideo } from 'lucide-react';
+import { Upload, FileVideo, Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '@/lib/api';
 
 interface UploadSectionProps {
   onFileSelect: (file: File) => void;
+  isAnalyzing: boolean;
 }
 
-export function UploadSection({ onFileSelect }: UploadSectionProps) {
+export function UploadSection({ onFileSelect, isAnalyzing }: UploadSectionProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -100,14 +103,15 @@ export function UploadSection({ onFileSelect }: UploadSectionProps) {
       <div className="mt-8 text-center">
         <button
           onClick={handleAnalyze}
-          disabled={!selectedFile}
-          className={`px-8 py-3 rounded-xl text-white font-bold transition-all ${
-            selectedFile
+          disabled={!selectedFile || isAnalyzing}
+          className={`px-8 py-3 rounded-xl text-white font-bold transition-all flex items-center gap-2 mx-auto ${
+            selectedFile && !isAnalyzing
               ? 'bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 shadow-xl shadow-blue-500/20'
               : 'bg-gray-300 dark:bg-gray-800 text-gray-500 cursor-not-allowed'
           }`}
         >
-          Deteksi Video
+          {isAnalyzing && <Loader2 className="w-5 h-5 animate-spin" />}
+          {isAnalyzing ? 'Sedang Memproses...' : 'Deteksi Video'}
         </button>
       </div>
     </div>
@@ -115,13 +119,54 @@ export function UploadSection({ onFileSelect }: UploadSectionProps) {
 }
 
 export default function Dashboard() {
-  const handleFileSelect = (file: File) => {
-    console.log("File dipilih untuk analisis:", file.name);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const navigate = useNavigate();
+
+  const handleFileSelect = async (file: File) => {
+    setIsAnalyzing(true);
+    
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/detection/detect`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        let errorDetail = "Gagal terhubung ke server.";
+        try {
+          const errorData = await response.json();
+          errorDetail = errorData.detail || errorDetail;
+        } catch (e) {}
+        throw new Error(errorDetail);
+      }
+
+      const responseData = await response.json();
+      console.log("Upload berhasil:", responseData);
+      
+      // Ambil ID (mendukung format _id dari MongoDB atau id dari alias Pydantic)
+      const historyId = responseData._id || responseData.id;
+      
+      // Arahkan ke halaman pemrosesan dengan ID history
+      navigate('/dashboard/processing', { state: { historyId } });
+    } catch (error: any) {
+      console.error("Error uploading file:", error);
+      const errorMessage = error.response?.data?.detail || "Gagal terhubung ke server. Pastikan backend sudah jalan.";
+      alert(`Gagal: ${errorMessage}`);
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   return (
     <div className="py-8">
-      <UploadSection onFileSelect={handleFileSelect} />
+      <UploadSection onFileSelect={handleFileSelect} isAnalyzing={isAnalyzing} />
     </div>
   );
 }
